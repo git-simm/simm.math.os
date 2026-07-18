@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>2D/3D 函数绘图仪 - MATH·OS</title>
+<script src="https://modao.cc/agent-py/static/source/js/tailwindcss.js"></script>
+<script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.js"></script>
+<script src="https://modao.cc/agent-py/static/source/js/echarts.min.js"></script>
+<style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Orbitron:wght@400;700&display=swap');
+        body { background-color: #0a0e1a; color: #e2e8f0; font-family: 'Inter', sans-serif; overflow: hidden; }
+        .font-tech { font-family: 'Orbitron', sans-serif; }
+        .glass-panel { background: rgba(13, 17, 23, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        #chart-container { aspect-ratio: 4 / 3; max-height: calc(100vh - 120px); }
+        .neon-text { text-shadow: 0 0 10px rgba(0, 212, 255, 0.8); }
+        .nav-link { position: relative; transition: all 0.3s; }
+        .nav-link::after { content: ''; position: absolute; bottom: -2px; left: 0; width: 0; height: 2px; background: #00d4ff; transition: width 0.3s; }
+        .nav-link:hover::after, .nav-active::after { width: 100%; }
+        
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            background: #1e293b;
+            border-radius: 5px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #00d4ff;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px #00d4ff;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col">
+<!-- 导航栏 -->
+<nav class="fixed top-0 w-full z-50 glass-panel border-b border-cyan-900/50 px-6 py-4 flex justify-between items-center">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center">
+<iconify-icon class="text-2xl text-white" icon="mdi:sigma"></iconify-icon>
+</div>
+<span class="text-xl font-tech font-bold tracking-wider neon-text text-cyan-400">MATH·OS</span>
+</div>
+<div class="hidden md:flex gap-8">
+<a class="nav-link text-gray-300 hover:text-cyan-400" href="home.html">知识图谱</a>
+<a class="nav-link nav-active text-cyan-400" href="function-plotter.html">函数绘图</a>
+<a class="nav-link text-gray-300 hover:text-cyan-400" href="math-history.html">数学史轴</a>
+<a class="nav-link text-gray-300 hover:text-cyan-400" href="formula-editor.html">几何编辑</a>
+<a class="nav-link text-gray-300 hover:text-cyan-400" href="physics-simulator.html">物理模拟</a>
+</div>
+<button class="px-4 py-1.5 rounded-full border border-cyan-500/50 text-cyan-400 text-sm font-tech">VIRTUAL LAB</button>
+</nav>
+<div class="flex-1 flex mt-20">
+<!-- 左侧控制面板 -->
+<aside class="w-80 glass-panel m-4 rounded-2xl p-6 flex flex-col gap-6 overflow-y-auto">
+<div>
+<label class="block text-xs font-tech text-cyan-500 uppercase tracking-widest mb-3">函数选择</label>
+<select class="w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-sm focus:border-cyan-500 outline-none" id="func-select">
+<option value="sin">y = a * sin(b * x + c)</option>
+<option value="cos">y = a * cos(b * x + c)</option>
+<option value="square">y = a * x² + b * x + c</option>
+<option value="cubic">y = a * x³ + b</option>
+<option value="exp">y = a * e^(b * x)</option>
+<option value="inv">y = a / x</option>
+</select>
+</div>
+<div class="space-y-6">
+<div>
+<div class="flex justify-between mb-2">
+<label class="text-sm font-tech text-gray-400">参数 a</label>
+<span class="text-cyan-400 font-tech" id="val-a">1.0</span>
+</div>
+<input id="param-a" max="5" min="-5" step="0.1" type="range" value="1"/>
+</div>
+<div>
+<div class="flex justify-between mb-2">
+<label class="text-sm font-tech text-gray-400">参数 b</label>
+<span class="text-cyan-400 font-tech" id="val-b">1.0</span>
+</div>
+<input id="param-b" max="5" min="-5" step="0.1" type="range" value="1"/>
+</div>
+<div>
+<div class="flex justify-between mb-2">
+<label class="text-sm font-tech text-gray-400">参数 c</label>
+<span class="text-cyan-400 font-tech" id="val-c">0.0</span>
+</div>
+<input id="param-c" max="5" min="-5" step="0.1" type="range" value="0"/>
+</div>
+</div>
+<div class="pt-6 border-t border-white/5 space-y-4">
+<div class="flex items-center justify-between">
+<span class="text-sm text-gray-400">坐标系</span>
+<div class="flex bg-slate-900 rounded-lg p-1">
+<button class="px-3 py-1 text-xs rounded bg-cyan-500 text-white">直角</button>
+<button class="px-3 py-1 text-xs text-gray-500">极坐标</button>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-sm text-gray-400">渲染模式</span>
+<button id="render-toggle" class="text-cyan-500 hover:text-white transition-colors" title="切换 2D/3D 渲染"><iconify-icon class="text-xl" icon="mdi:cube-outline"></iconify-icon></button>
+</div>
+<button class="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm transition-all" id="reset-btn">重置视图</button>
+</div>
+<div class="mt-auto p-4 bg-cyan-500/5 rounded-xl border border-cyan-500/20">
+<h4 class="text-xs font-tech text-cyan-400 uppercase mb-2">当前解析</h4>
+<div class="text-lg font-tech text-white italic" id="equation-display">y = 1.0sin(1.0x + 0.0)</div>
+</div>
+</aside>
+<!-- 主绘图区 -->
+<main class="flex-1 m-4 relative">
+<div class="w-full h-full glass-panel rounded-2xl overflow-hidden" id="chart-container"></div>
+<!-- 浮动信息卡片 -->
+<div class="absolute bottom-6 right-6 p-4 glass-panel rounded-xl border-l-4 border-cyan-500 min-w-[200px]">
+<h4 class="text-xs font-tech text-cyan-500 mb-2">数学特性</h4>
+<div class="space-y-1">
+<div class="flex justify-between text-xs"><span class="text-gray-500">定义域:</span> <span class="text-gray-300">(-∞, +∞)</span></div>
+<div class="flex justify-between text-xs"><span class="text-gray-500">周期性:</span> <span class="text-gray-300" id="prop-period">2π</span></div>
+<div class="flex justify-between text-xs"><span class="text-gray-500">导数:</span> <span class="text-gray-300" id="prop-der">y' = a·b·cos(bx+c)</span></div>
+</div>
+</div>
+</main>
+</div>
+<script>
+        const chartDom = document.getElementById('chart-container');
+        let myChart = echarts.init(chartDom, null, { renderer: 'canvas' });
+        let renderMode = '2d'; // '2d' or '3d'
+
+        const selectors = {
+            func: document.getElementById('func-select'),
+            a: document.getElementById('param-a'),
+            b: document.getElementById('param-b'),
+            c: document.getElementById('param-c'),
+            va: document.getElementById('val-a'),
+            vb: document.getElementById('val-b'),
+            vc: document.getElementById('val-c'),
+            equation: document.getElementById('equation-display'),
+            period: document.getElementById('prop-period'),
+            der: document.getElementById('prop-der')
+        };
+
+        function eval2D(f, a, b, c, x) {
+            switch (f) {
+                case 'sin':   return a * Math.sin(b * x + c);
+                case 'cos':   return a * Math.cos(b * x + c);
+                case 'square': return a * x * x + b * x + c;
+                case 'cubic':  return a * x * x * x + b;
+                case 'exp':    return a * Math.exp(b * x);
+                case 'inv':    return (x === 0) ? NaN : a / x;
+                default:       return 0;
+            }
+        }
+
+                function buildMetadata(f, a, b, c) {
+            let eq, per, der;
+            const aStr = a.toFixed(1);
+            const bStr = b.toFixed(1);
+            const cStr = c.toFixed(1);
+            switch (f) {
+                case 'sin':
+                    eq = 'y = ' + aStr + ' sin(' + bStr + 'x + ' + cStr + ')';
+                    per = '2\u03C0';
+                    der = 'y\' = ' + (a * b).toFixed(1) + ' cos(' + bStr + 'x + ' + cStr + ')';
+                    break;
+                case 'cos':
+                    eq = 'y = ' + aStr + ' cos(' + bStr + 'x + ' + cStr + ')';
+                    per = '2\u03C0';
+                    der = 'y\' = ' + (-a * b).toFixed(1) + ' sin(' + bStr + 'x + ' + cStr + ')';
+                    break;
+                case 'square':
+                    eq = 'y = ' + aStr + 'x\u00B2 + ' + bStr + 'x + ' + cStr;
+                    per = '\u65e0';
+                    der = 'y\' = ' + (2 * a).toFixed(1) + 'x + ' + bStr;
+                    break;
+                case 'cubic':
+                    eq = 'y = ' + aStr + 'x\u00B3 + ' + bStr;
+                    per = '\u65e0';
+                    der = 'y\' = ' + (3 * a).toFixed(1) + 'x\u00B2';
+                    break;
+                case 'exp':
+                    eq = 'y = ' + aStr + ' e^(' + bStr + 'x)';
+                    per = '\u65e0';
+                    der = 'y\' = ' + (a * b).toFixed(1) + ' e^(' + bStr + 'x)';
+                    break;
+                case 'inv':
+                    eq = 'y = ' + aStr + ' / x';
+                    per = '\u65e0';
+                    der = 'y\' = ' + (-a) + ' / x\u00B2';
+                    break;
+                default:
+                    eq = '';
+                    per = '';
+                    der = '';
+            }
+            return [eq, per, der];
+        }
+
+function updateChart() {
+            const f = selectors.func.value;
+            const a = parseFloat(selectors.a.value);
+            const b = parseFloat(selectors.b.value);
+            const c = parseFloat(selectors.c.value);
+
+            selectors.va.textContent = a.toFixed(1);
+            selectors.vb.textContent = b.toFixed(1);
+            selectors.vc.textContent = c.toFixed(1);
+
+            const [eq, per, der] = buildMetadata(f, a, b, c);
+            selectors.equation.textContent = eq;
+            selectors.der.textContent = der;
+            selectors.period.textContent = per;
+
+            const N = 200;
+            const step = 20 / N;
+
+            if (renderMode === '3d') {
+                // ---- 3D Scatter + Surface ----
+                const scatterData = [];
+                for (let i = 0; i < N; i++) {
+                    const x = -10 + i * step;
+                    const z = eval2D(f, a, b, c, x);
+                    if (isFinite(z) && Math.abs(z) <= 10) {
+                        scatterData.push([x, 0, z]);
+                    }
+                }
+
+                // Add y-offset slices for a pseudo-surface look
+                const surfaceData = [];
+                const yValues = [-5, -2.5, 0, 2.5, 5];
+                for (let yiIdx = 0; yiIdx < yValues.length; yiIdx++) { const yi = yValues[yiIdx];
+                    for (let i = 0; i < N; i++) {
+                        const x = -10 + i * step;
+                        const z = eval2D(f, a, b, c, x);
+                        if (isFinite(z) && Math.abs(z) <= 10) {
+                            surfaceData.push([x, yi, z]);
+                        }
+                    }
+                }
+
+                const option3D = {
+                    backgroundColor: 'transparent',
+                    tooltip: {
+                        backgroundColor: 'rgba(13, 17, 23, 0.9)',
+                        borderColor: 'rgba(0, 212, 255, 0.5)',
+                        textStyle: { color: '#fff' }
+                    },
+                    visualMap: {
+                        show: true,
+                        min: -5,
+                        max: 5,
+                        inRange: { color: ['#7c3aed', '#00d4ff', '#f0b90b'] },
+                        textStyle: { color: '#64748b' },
+                        bottom: 10,
+                        left: 10,
+                        borderColor: 'rgba(255,255,255,0.1)'
+                    },
+                    grid3D: {
+                        viewControl: {
+                            projection: 'perspective',
+                            autoRotate: false,
+                            alpha: 25,
+                            beta: 45,
+                            distance: 180
+                        },
+                        boxWidth: 100,
+                        boxHeight: 50,
+                        boxDepth: 60,
+                        axisLine: { lineStyle: { color: '#334155' } },
+                        axisPointer: { lineStyle: { color: '#00d4ff' } },
+                        splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } },
+                        axisLabel: { color: '#64748b' }
+                    },
+                    xAxis3D: {
+                        type: 'value',
+                        min: -10,
+                        max: 10,
+                        name: 'X',
+                        nameTextStyle: { color: '#64748b' }
+                    },
+                    yAxis3D: {
+                        type: 'value',
+                        min: -6,
+                        max: 6,
+                        name: 'Y',
+                        nameTextStyle: { color: '#64748b' }
+                    },
+                    zAxis3D: {
+                        type: 'value',
+                        min: -10,
+                        max: 10,
+                        name: 'Z',
+                        nameTextStyle: { color: '#64748b' }
+                    },
+                    series: [{
+                        type: 'scatter3D',
+                        data: scatterData,
+                        symbolSize: 4,
+                        itemStyle: {
+                            color: '#00d4ff',
+                            borderColor: '#00d4ff'
+                        },
+                        emphasis: { itemStyle: { color: '#fff' } }
+                    }, {
+                        type: 'scatter3D',
+                        data: surfaceData,
+                        symbolSize: 1.5,
+                        itemStyle: {
+                            color: 'rgba(124, 58, 237, 0.25)',
+                            borderColor: 'transparent'
+                        },
+                        silent: true
+                    }]
+                };
+                myChart.setOption(option3D, true);
+            } else {
+                // ---- 2D Line Chart ----
+                const data = [];
+                for (let i = 0; i < N; i++) {
+                    const x = -10 + i * step;
+                    const y = eval2D(f, a, b, c, x);
+                    data.push([x, y]);
+                }
+
+                const option = {
+                    backgroundColor: 'transparent',
+                    tooltip: {
+                        trigger: 'axis',
+                        backgroundColor: 'rgba(13, 17, 23, 0.9)',
+                        borderColor: 'rgba(0, 212, 255, 0.5)',
+                        textStyle: { color: '#fff' }
+                    },
+                    grid: { left: '5%', right: '5%', bottom: '5%', top: '10%', containLabel: true },
+                    xAxis: {
+                        type: 'value',
+                        min: -10, max: 10,
+                        axisLine: { lineStyle: { color: '#334155' } },
+                        splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } },
+                        axisLabel: { color: '#64748b' }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        min: -10, max: 10,
+                        axisLine: { lineStyle: { color: '#334155' } },
+                        splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } },
+                        axisLabel: { color: '#64748b' }
+                    },
+                    series: [{
+                        type: 'line',
+                        data: data,
+                        showSymbol: false,
+                        smooth: true,
+                        lineStyle: {
+                            width: 3,
+                            color: {
+                                type: 'linear',
+                                x: 0, y: 0, x2: 1, y2: 0,
+                                colorStops: [
+                                    { offset: 0, color: '#00d4ff' },
+                                    { offset: 1, color: '#7c3aed' }
+                                ]
+                            },
+                            shadowBlur: 10,
+                            shadowColor: 'rgba(0, 212, 255, 0.5)'
+                        },
+                        areaStyle: {
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: 'rgba(0, 212, 255, 0.2)' },
+                                { offset: 1, color: 'rgba(0, 212, 255, 0)' }
+                            ])
+                        }
+                    }]
+                };
+                myChart.setOption(option, true);
+            }
+        }
+
+        [selectors.func, selectors.a, selectors.b, selectors.c].forEach(el => {
+            el.addEventListener('input', updateChart);
+        });
+
+        window.addEventListener('resize', () => myChart.resize());
+
+        // Render mode toggle
+        document.getElementById('render-toggle').addEventListener('click', () => {
+            renderMode = (renderMode === '2d') ? '3d' : '2d';
+            const btn = document.getElementById('render-toggle');
+            const icon = btn.querySelector('iconify-icon');
+            if (renderMode === '3d') {
+                icon.setAttribute('icon', 'mdi:axis-arrow');
+                btn.classList.remove('text-cyan-500');
+                btn.classList.add('text-purple-400');
+            } else {
+                icon.setAttribute('icon', 'mdi:cube-outline');
+                btn.classList.remove('text-purple-400');
+                btn.classList.add('text-cyan-500');
+            }
+            // Re-create chart for clean 2D/3D transition
+            myChart.dispose();
+            myChart = echarts.init(chartDom, null, { renderer: 'canvas' });
+            window.addEventListener('resize', () => myChart.resize());
+            updateChart();
+        });
+
+        document.getElementById('reset-btn').addEventListener('click', () => {
+            selectors.a.value = 1;
+            selectors.b.value = 1;
+            selectors.c.value = 0;
+            updateChart();
+        });
+
+        updateChart();
+    </script>
+</body>
+</html>

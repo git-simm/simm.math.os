@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>物理应用场景模拟器 - MATH·OS</title>
+<script src="https://modao.cc/agent-py/static/source/js/tailwindcss.js"></script>
+<script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.js"></script>
+<style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Orbitron:wght@400;700&display=swap');
+        body { background-color: #0a0e1a; color: #e2e8f0; font-family: 'Inter', sans-serif; overflow: hidden; }
+        .font-tech { font-family: 'Orbitron', sans-serif; }
+        .glass-panel { background: rgba(13, 17, 23, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .neon-text { text-shadow: 0 0 10px rgba(0, 212, 255, 0.8); }
+        .nav-link { position: relative; transition: all 0.3s; }
+        .nav-link::after { content: ''; position: absolute; bottom: -2px; left: 0; width: 0; height: 2px; background: #00d4ff; transition: width 0.3s; }
+        .nav-link:hover::after, .nav-active::after { width: 100%; }
+        
+        .tab-btn.active { color: #f43f5e; border-bottom: 2px solid #f43f5e; }
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: #1e293b; border-radius: 5px; outline: none; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #f43f5e; border-radius: 50%; cursor: pointer; }
+    </style>
+</head>
+<body class="h-screen flex flex-col">
+<!-- 导航栏 -->
+<nav class="fixed top-0 w-full z-50 glass-panel border-b border-cyan-900/50 px-6 py-4 flex justify-between items-center">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center">
+<iconify-icon class="text-2xl text-white" icon="mdi:sigma"></iconify-icon>
+</div>
+<span class="text-xl font-tech font-bold tracking-wider neon-text text-cyan-400">MATH·OS</span>
+</div>
+<div class="hidden md:flex gap-8">
+<a class="nav-link text-gray-300 hover:text-cyan-400" href="home.html">知识图谱</a>
+<a class="nav-link text-gray-300 hover:text-cyan-400" href="function-plotter.html">函数绘图</a>
+<a class="nav-link text-gray-300 hover:text-cyan-400" href="math-history.html">数学史轴</a>
+<a class="nav-link text-gray-300 hover:text-cyan-400" href="formula-editor.html">几何编辑</a>
+<a class="nav-link nav-active text-cyan-400" href="physics-simulator.html">物理模拟</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="px-4 py-1.5 rounded-full border border-rose-500/50 text-rose-400 text-sm font-tech">SIMULATION READY</button>
+</div>
+</nav>
+<div class="flex-1 flex mt-20 p-4 gap-4 overflow-hidden">
+<!-- 左侧控制 -->
+<aside class="w-80 flex flex-col gap-4">
+<div class="glass-panel rounded-2xl p-6 border border-white/10">
+<h3 class="text-xs font-tech text-rose-500 uppercase tracking-widest mb-4">场景选择</h3>
+<div class="space-y-2">
+<button class="w-full py-3 px-4 rounded-xl glass-panel border border-white/5 hover:border-rose-500/30 text-left flex items-center gap-3 group transition-all" id="btn-mechanics" onclick="switchScene('mechanics')">
+<iconify-icon class="text-xl text-gray-500 group-hover:text-rose-500" icon="mdi:engine"></iconify-icon>
+<span class="text-sm font-tech">力学模型</span>
+</button>
+<button class="w-full py-3 px-4 rounded-xl glass-panel border border-white/5 hover:border-rose-500/30 text-left flex items-center gap-3 group transition-all" id="btn-celestial" onclick="switchScene('celestial')">
+<iconify-icon class="text-xl text-gray-500 group-hover:text-rose-500" icon="mdi:orbit"></iconify-icon>
+<span class="text-sm font-tech">天体模型</span>
+</button>
+<button class="w-full py-3 px-4 rounded-xl glass-panel border border-white/5 hover:border-rose-500/30 text-left flex items-center gap-3 group transition-all" id="btn-quantum" onclick="switchScene('quantum')">
+<iconify-icon class="text-xl text-gray-500 group-hover:text-rose-500" icon="mdi:atom"></iconify-icon>
+<span class="text-sm font-tech">量子模型</span>
+</button>
+</div>
+</div>
+<div class="flex-1 glass-panel rounded-2xl p-6 border border-white/10 flex flex-col">
+<h3 class="text-xs font-tech text-gray-400 uppercase mb-6">物理参数</h3>
+<div class="space-y-6" id="controls-container">
+<!-- 动态切换参数 -->
+</div>
+<div class="mt-auto p-4 bg-rose-500/5 rounded-xl border border-rose-500/20">
+<h4 class="text-[10px] font-tech text-rose-400 uppercase mb-2">运动方程</h4>
+<div class="text-xs text-white italic font-serif" id="physics-formula">x(t) = A·cos(ωt + φ)</div>
+</div>
+</div>
+</aside>
+<!-- 右侧主预览 -->
+<main class="flex-1 glass-panel rounded-2xl relative overflow-hidden">
+<canvas class="w-full h-full" id="sim-canvas"></canvas>
+<div class="absolute top-6 right-6 p-4 glass-panel rounded-xl border-l-4 border-rose-500">
+<h4 class="text-sm font-tech text-white mb-2" id="sim-title">简谐运动模拟</h4>
+<div class="space-y-1 text-[10px]">
+<div class="flex justify-between text-gray-500"><span>状态:</span> <span class="text-rose-400">运行中</span></div>
+<div class="flex flex-col gap-1 mt-2" id="sim-data">
+<!-- 动态数据 -->
+</div>
+</div>
+</div>
+<div class="absolute bottom-6 left-6 flex gap-2">
+<button class="px-6 py-2 bg-rose-500 rounded-lg text-white text-sm font-tech shadow-lg shadow-rose-500/20">开始模拟</button>
+<button class="px-4 py-2 glass-panel rounded-lg text-white text-sm">重置</button>
+</div>
+</main>
+</div>
+<script>
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height, currentScene = 'mechanics';
+        let time = 0;
+
+        const scenes = {
+            mechanics: {
+                title: "弹簧振子 (SHM)",
+                formula: "x(t) = A·e^(-bt/2m)·cos(ωt + φ)",
+                params: [
+                    { name: "质量 (m)", id: "m", min: 1, max: 10, val: 5 },
+                    { name: "劲度系数 (k)", id: "k", min: 1, max: 10, val: 5 },
+                    { name: "阻尼 (b)", id: "b", min: 0, max: 1, val: 0.1 }
+                ]
+            },
+            celestial: {
+                title: "天体轨道模拟",
+                formula: "T² = (4π²/GM) · a³",
+                params: [
+                    { name: "质量 (M)", id: "M", min: 10, max: 100, val: 50 },
+                    { name: "轨道半径 (r)", id: "r", min: 50, max: 200, val: 120 },
+                    { name: "离心率 (e)", id: "e", min: 0, max: 0.9, val: 0.1 }
+                ]
+            },
+            quantum: {
+                title: "电子云概率密度",
+                formula: "ψ(n,l,m) = R(r)Y(θ,φ)",
+                params: [
+                    { name: "量子数 (n)", id: "n", min: 1, max: 5, val: 2 },
+                    { name: "角动量 (l)", id: "l", min: 0, max: 4, val: 1 },
+                    { name: "粒子数", id: "p", min: 100, max: 1000, val: 500 }
+                ]
+            }
+        };
+
+        function resize() {
+            width = canvas.width = canvas.offsetWidth;
+            height = canvas.height = canvas.offsetHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        function switchScene(s) {
+            currentScene = s;
+            document.querySelectorAll('[id^="btn-"]').forEach(b => b.classList.remove('border-rose-500/50', 'bg-rose-500/10'));
+            document.getElementById(`btn-${s}`).classList.add('border-rose-500/50', 'bg-rose-500/10');
+            
+            const config = scenes[s];
+            document.getElementById('sim-title').textContent = config.title;
+            document.getElementById('physics-formula').textContent = config.formula;
+            
+            const controls = document.getElementById('controls-container');
+            controls.innerHTML = config.params.map(p => `
+                <div>
+                    <div class="flex justify-between mb-1"><span class="text-xs text-gray-500">${p.name}</span> <span id="val-${p.id}" class="text-xs text-rose-400 font-tech">${p.val}</span></div>
+                    <input type="range" id="param-${p.id}" min="${p.min}" max="${p.max}" step="${(p.max-p.min)/100}" value="${p.val}" oninput="document.getElementById('val-${p.id}').textContent=this.value">
+                </div>
+            `).join('');
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+            time += 0.016;
+            
+            const cx = width / 2;
+            const cy = height / 2;
+
+            if (currentScene === 'mechanics') {
+                const k = parseFloat(document.getElementById('param-k')?.value || 5);
+                const m = parseFloat(document.getElementById('param-m')?.value || 5);
+                const b = parseFloat(document.getElementById('param-b')?.value || 0.1);
+                
+                const omega = Math.sqrt(k/m);
+                const x = 150 * Math.exp(-b * time / (2*m)) * Math.cos(omega * time);
+                
+                // 绘制弹簧
+                ctx.beginPath();
+                ctx.strokeStyle = '#334155';
+                ctx.moveTo(cx - 200, cy);
+                for(let i=0; i<400+x; i+=5) {
+                    ctx.lineTo(cx - 200 + i, cy + Math.sin(i*0.2) * 20);
+                }
+                ctx.stroke();
+                
+                // 绘制质点
+                ctx.fillStyle = '#f43f5e';
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#f43f5e';
+                ctx.beginPath();
+                ctx.arc(cx - 200 + 400 + x, cy, 30, 0, Math.PI*2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            } else if (currentScene === 'celestial') {
+                const M = parseFloat(document.getElementById('param-M')?.value || 50);
+                const r = parseFloat(document.getElementById('param-r')?.value || 120);
+                const e = parseFloat(document.getElementById('param-e')?.value || 0.1);
+
+                // 太阳
+                ctx.fillStyle = '#f59e0b';
+                ctx.shadowBlur = 30;
+                ctx.shadowColor = '#f59e0b';
+                ctx.beginPath();
+                ctx.arc(cx, cy, 40, 0, Math.PI*2);
+                ctx.fill();
+
+                // 轨道
+                ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+                ctx.beginPath();
+                ctx.ellipse(cx + r*e, cy, r, r*Math.sqrt(1-e*e), 0, 0, Math.PI*2);
+                ctx.stroke();
+
+                // 行星
+                const ang = time * Math.sqrt(M/r) * 2;
+                const px = cx + r*e + r * Math.cos(ang);
+                const py = cy + r*Math.sqrt(1-e*e) * Math.sin(ang);
+                
+                ctx.fillStyle = '#3b82f6';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#3b82f6';
+                ctx.beginPath();
+                ctx.arc(px, py, 12, 0, Math.PI*2);
+                ctx.fill();
+            } else {
+                const n = parseFloat(document.getElementById('param-n')?.value || 2);
+                const pCount = parseFloat(document.getElementById('param-p')?.value || 500);
+
+                ctx.fillStyle = 'rgba(124, 58, 237, 0.4)';
+                for(let i=0; i<pCount; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const phi = Math.random() * Math.PI;
+                    const dist = (Math.random() * 50 * n) * (1 + Math.sin(time*0.5 + i)*0.1);
+                    
+                    const x = cx + dist * Math.sin(phi) * Math.cos(angle + time*0.1);
+                    const y = cy + dist * Math.sin(phi) * Math.sin(angle + time*0.1);
+                    
+                    ctx.beginPath();
+                    ctx.arc(x, y, 1, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        switchScene('mechanics');
+        draw();
+    </script>
+</body>
+</html>

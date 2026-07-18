@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>数学知识系统 - 沉浸式首页</title>
+<script src="https://modao.cc/agent-py/static/source/js/tailwindcss.js"></script>
+<script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.js"></script>
+<script src="https://modao.cc/agent-py/static/source/js/echarts.min.js"></script>
+<style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Orbitron:wght@400;700&display=swap');
+        
+        body {
+            background-color: #0a0e1a;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .font-tech {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .neon-border {
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
+        }
+
+        .neon-text {
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.8);
+        }
+
+        .glass-panel {
+            background: rgba(13, 17, 23, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .node-active {
+            filter: drop-shadow(0 0 15px currentColor);
+            transition: all 0.3s ease;
+        }
+
+        .node-active:hover {
+            transform: scale(1.1);
+            filter: drop-shadow(0 0-25px currentColor);
+        }
+
+        #particle-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .nav-link {
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #00d4ff;
+            transition: width 0.3s;
+        }
+
+        .nav-link:hover::after, .nav-active::after {
+            width: 100%;
+        }
+
+        @keyframes flow {
+            0% { stroke-dashoffset: 100; }
+            100% { stroke-dashoffset: 0; }
+        }
+
+        .flow-line {
+            stroke-dasharray: 10;
+            animation: flow 2s linear infinite;
+        }
+    </style>
+</head>
+<body>
+<canvas id="particle-canvas"></canvas>
+<!-- 导航栏 -->
+<nav class="fixed top-0 w-full z-50 glass-panel border-b border-cyan-900/50 px-6 py-4 flex justify-between items-center">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+<iconify-icon class="text-2xl text-white" icon="mdi:sigma"></iconify-icon>
+</div>
+<span class="text-xl font-tech font-bold tracking-wider neon-text text-cyan-400">MATH·OS</span>
+</div>
+<div class="hidden md:flex gap-8">
+<a class="nav-link nav-active text-cyan-400" href="home.html">知识图谱</a>
+<a class="nav-link text-gray-300 hover:text-cyan-400" href="function-plotter.html">函数绘图</a>
+<a class="nav-link text-gray-300 hover:text-cyan-400" href="math-history.html">数学史轴</a>
+<a class="nav-link text-gray-300 hover:text-cyan-400" href="formula-editor.html">几何编辑</a>
+<a class="nav-link text-gray-300 hover:text-cyan-400" href="physics-simulator.html">物理模拟</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="px-4 py-1.5 rounded-full border border-cyan-500/50 text-cyan-400 text-sm hover:bg-cyan-500/10 transition-all font-tech">SYSTEM v2.0</button>
+</div>
+</nav>
+<!-- 主内容区 -->
+<main class="pt-32 pb-20 px-6 max-w-7xl mx-auto">
+<!-- 沉浸式图谱区域 -->
+<div class="relative h-[600px] mb-20">
+<div class="w-full h-full relative" id="graph-container">
+<!-- 中心节点 -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+<div class="w-32 h-32 rounded-full glass-panel border-2 border-cyan-400 flex flex-col items-center justify-center node-active cursor-pointer" style="color: #00d4ff;">
+<iconify-icon class="text-4xl mb-1" icon="mdi:infinity"></iconify-icon>
+<span class="font-bold text-lg font-tech">数学</span>
+</div>
+</div>
+<!-- 环绕节点 -->
+<div id="orbit-nodes">
+<!-- 代数 -->
+<a class="absolute top-1/4 left-1/4 -translate-x-1/2 w-24 h-24 rounded-full glass-panel border border-purple-500 flex flex-col items-center justify-center node-active cursor-pointer hover:bg-purple-500/10 text-purple-400" href="function-plotter.html" style="color: #a855f7;">
+<iconify-icon class="text-2xl mb-1" icon="mdi:variable"></iconify-icon>
+<span class="text-sm font-tech">代数</span>
+</a>
+<!-- 几何 -->
+<a class="absolute top-1/4 right-1/4 translate-x-1/2 w-24 h-24 rounded-full glass-panel border border-emerald-500 flex flex-col items-center justify-center node-active cursor-pointer hover:bg-emerald-500/10 text-emerald-400" href="function-plotter.html" style="color: #10b981;">
+<iconify-icon class="text-2xl mb-1" icon="mdi:geometry"></iconify-icon>
+<span class="text-sm font-tech">几何</span>
+</a>
+<!-- 微积分 -->
+<a class="absolute bottom-1/4 left-1/3 -translate-x-1/2 w-24 h-24 rounded-full glass-panel border border-rose-500 flex flex-col items-center justify-center node-active cursor-pointer hover:bg-rose-500/10 text-rose-400" href="function-plotter.html" style="color: #f43f5e;">
+<iconify-icon class="text-2xl mb-1" icon="mdi:integral"></iconify-icon>
+<span class="text-sm font-tech">微积分</span>
+</a>
+<!-- 概率论 -->
+<a class="absolute bottom-1/4 right-1/3 translate-x-1/2 w-24 h-24 rounded-full glass-panel border border-amber-500 flex flex-col items-center justify-center node-active cursor-pointer hover:bg-amber-500/10 text-amber-400" href="function-plotter.html" style="color: #f59e0b;">
+<iconify-icon class="text-2xl mb-1" icon="mdi:dice-multiple"></iconify-icon>
+<span class="text-sm font-tech">概率论</span>
+</a>
+<!-- 线性代数 -->
+<a class="absolute top-1/2 right-0 -translate-y-1/2 w-24 h-24 rounded-full glass-panel border border-blue-500 flex flex-col items-center justify-center node-active cursor-pointer hover:bg-blue-500/10 text-blue-400" href="function-plotter.html" style="color: #3b82f6;">
+<iconify-icon class="text-2xl mb-1" icon="mdi:matrix"></iconify-icon>
+<span class="text-sm font-tech">线性代数</span>
+</a>
+<!-- 数论 -->
+<a class="absolute top-1/2 left-0 -translate-y-1/2 w-24 h-24 rounded-full glass-panel border border-cyan-500 flex flex-col items-center justify-center node-active cursor-pointer hover:bg-cyan-500/10 text-cyan-400" href="function-plotter.html" style="color: #06b6d4;">
+<iconify-icon class="text-2xl mb-1" icon="mdi:numeric"></iconify-icon>
+<span class="text-sm font-tech">数论</span>
+</a>
+</div>
+<!-- 装饰连线 -->
+<svg class="absolute inset-0 w-full h-full -z-0 pointer-events-none">
+<line class="flow-line" stroke="rgba(168, 85, 247, 0.2)" stroke-width="2" x1="50%" x2="25%" y1="50%" y2="25%"></line>
+<line class="flow-line" stroke="rgba(16, 185, 129, 0.2)" stroke-width="2" x1="50%" x2="75%" y1="50%" y2="25%"></line>
+<line class="flow-line" stroke="rgba(244, 63, 94, 0.2)" stroke-width="2" x1="50%" x2="33.3%" y1="50%" y2="75%"></line>
+<line class="flow-line" stroke="rgba(245, 158, 11, 0.2)" stroke-width="2" x1="50%" x2="66.6%" y1="50%" y2="75%"></line>
+<line class="flow-line" stroke="rgba(59, 130, 246, 0.2)" stroke-width="2" x1="50%" x2="100%" y1="50%" y2="50%"></line>
+<line class="flow-line" stroke="rgba(6, 182, 212, 0.2)" stroke-width="2" x1="50%" x2="0%" y1="50%" y2="50%"></line>
+</svg>
+</div>
+</div>
+<!-- 底部功能入口 -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<a class="glass-panel p-6 rounded-2xl hover:bg-cyan-500/5 transition-all group border border-white/5 hover:border-cyan-500/30" href="function-plotter.html">
+<div class="w-12 h-12 rounded-xl bg-cyan-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+<iconify-icon class="text-2xl text-cyan-400" icon="mdi:chart-bell-curve"></iconify-icon>
+</div>
+<h3 class="text-lg font-bold mb-2 font-tech">2D/3D 绘图仪</h3>
+<p class="text-gray-400 text-sm">探索动态函数之美，支持实时参数调节与多维可视化。</p>
+</a>
+<a class="glass-panel p-6 rounded-2xl hover:bg-purple-500/5 transition-all group border border-white/5 hover:border-purple-500/30" href="math-history.html">
+<div class="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+<iconify-icon class="text-2xl text-purple-400" icon="mdi:history"></iconify-icon>
+</div>
+<h3 class="text-lg font-bold mb-2 font-tech">数学史时间轴</h3>
+<p class="text-gray-400 text-sm">纵览千年数学演变历程，从古代文明到现代前沿理论。</p>
+</a>
+<a class="glass-panel p-6 rounded-2xl hover:bg-emerald-500/5 transition-all group border border-white/5 hover:border-emerald-500/30" href="formula-editor.html">
+<div class="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+<iconify-icon class="text-2xl text-emerald-400" icon="mdi:format-font"></iconify-icon>
+</div>
+<h3 class="text-lg font-bold mb-2 font-tech">几何关联编辑</h3>
+<p class="text-gray-400 text-sm">定义公式驱动几何形变，在代码与图形之间建立直观联系。</p>
+</a>
+<a class="glass-panel p-6 rounded-2xl hover:bg-rose-500/5 transition-all group border border-white/5 hover:border-rose-500/30" href="physics-simulator.html">
+<div class="w-12 h-12 rounded-xl bg-rose-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+<iconify-icon class="text-2xl text-rose-400" icon="mdi:atom"></iconify-icon>
+</div>
+<h3 class="text-lg font-bold mb-2 font-tech">物理应用模拟</h3>
+<p class="text-gray-400 text-sm">通过数学模型模拟现实物理场景，揭示宇宙运行规律。</p>
+</a>
+</div>
+<!-- 名言区域 -->
+<div class="mt-20 text-center py-10 glass-panel rounded-3xl relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-purple-500/5"></div>
+<div class="relative z-10 px-10" id="quote-container">
+<p class="text-2xl font-light italic text-cyan-100 mb-4 transition-opacity duration-500" id="quote-text">“数学是上帝用来书写宇宙的语言。”</p>
+<p class="text-cyan-500 font-tech tracking-widest text-sm" id="quote-author">— 伽利略</p>
+</div>
+</div>
+</main>
+<footer class="py-10 border-t border-white/5 text-center text-gray-500 text-sm">
+<p>© 2026 MATH·OS KNOWLEDGE SYSTEM. ALL RIGHTS RESERVED.</p>
+</footer>
+<script>
+        // 粒子背景动画
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        let mouse = { x: null, y: null };
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', resize);
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.x;
+            mouse.y = e.y;
+        });
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.size = Math.random() * 2;
+                this.color = `rgba(${Math.random() * 100 + 100}, ${Math.random() * 200 + 55}, 255, ${Math.random() * 0.5 + 0.2})`;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                if (mouse.x && mouse.y) {
+                    let dx = mouse.x - this.x;
+                    let dy = mouse.y - this.y;
+                    let dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 150) {
+                        this.x += dx * 0.01;
+                        this.y += dy * 0.01;
+                    }
+                }
+
+                if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+                    this.reset();
+                }
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function initParticles() {
+            resize();
+            particles = [];
+            for (let i = 0; i < 150; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animate);
+        }
+
+        initParticles();
+        animate();
+
+        // 名言切换逻辑
+        const quotes = [
+            { text: "“数学是上帝用来书写宇宙的语言。”", author: "伽利略" },
+            { text: "“大自然这本书是用数学语言写成的。”", author: "伽利略" },
+            { text: "“数学，如果正确地看它，不但拥有真理，而且也具有至高无上的美。”", author: "罗素" },
+            { text: "“哪里有数学，哪里就有美。”", author: "普罗克洛斯" },
+            { text: "“纯数学，就其本质而言，是逻辑思想的诗篇。”", author: "爱因斯坦" }
+        ];
+        let currentQuote = 0;
+        const quoteText = document.getElementById('quote-text');
+        const quoteAuthor = document.getElementById('quote-author');
+
+        setInterval(() => {
+            quoteText.style.opacity = 0;
+            setTimeout(() => {
+                currentQuote = (currentQuote + 1) % quotes.length;
+                quoteText.textContent = quotes[currentQuote].text;
+                quoteAuthor.textContent = `— ${quotes[currentQuote].author}`;
+                quoteText.style.opacity = 1;
+            }, 500);
+        }, 5000);
+    </script>
+</body>
+</html>

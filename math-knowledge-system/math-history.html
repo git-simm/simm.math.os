@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>数学史交互时间轴 - MATH·OS</title>
+<script src="https://modao.cc/agent-py/static/source/js/tailwindcss.js"></script>
+<script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.js"></script>
+<script src="https://modao.cc/agent-py/static/source/js/echarts.min.js"></script>
+<style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Orbitron:wght@400;700&display=swap');
+        body { background-color: #0a0e1a; color: #e2e8f0; font-family: 'Inter', sans-serif; }
+        .font-tech { font-family: 'Orbitron', sans-serif; }
+        .glass-panel { background: rgba(13, 17, 23, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .neon-text { text-shadow: 0 0 10px rgba(0, 212, 255, 0.8); }
+        .timeline-line { position: absolute; left: 50%; transform: translateX(-50%); width: 2px; height: 100%; background: linear-gradient(to bottom, transparent, #00d4ff, #7c3aed, transparent); }
+        
+        .timeline-item { position: relative; width: 100%; margin-bottom: 4rem; display: flex; justify-content: center; align-items: center; }
+        .timeline-dot { width: 16px; height: 16px; background: #00d4ff; border-radius: 50%; z-index: 10; box-shadow: 0 0 15px #00d4ff; cursor: pointer; transition: transform 0.3s; }
+        .timeline-dot:hover { transform: scale(1.5); }
+        .timeline-content { width: 45%; padding: 1.5rem; border-radius: 1rem; transition: all 0.3s; }
+        
+        .timeline-left .timeline-content { margin-right: auto; text-align: right; }
+        .timeline-right .timeline-content { margin-left: auto; text-align: left; }
+
+        .active-card { border: 1px solid rgba(0, 212, 255, 0.5); background: rgba(0, 212, 255, 0.05); }
+        
+        #particle-canvas { position: fixed; top: 0; left: 0; z-index: -1; pointer-events: none; }
+        .nav-link { position: relative; transition: all 0.3s; }
+        .nav-link::after { content: ''; position: absolute; bottom: -2px; left: 0; width: 0; height: 2px; background: #00d4ff; transition: width 0.3s; }
+        .nav-link:hover::after, .nav-active::after { width: 100%; }
+    </style>
+</head>
+<body class="overflow-x-hidden">
+<canvas id="particle-canvas"></canvas>
+<!-- 导航栏 -->
+<nav class="fixed top-0 w-full z-50 glass-panel border-b border-cyan-900/50 px-6 py-4 flex justify-between items-center">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center">
+<iconify-icon class="text-2xl text-white" icon="mdi:sigma"></iconify-icon>
+</div>
+<span class="text-xl font-tech font-bold tracking-wider neon-text text-cyan-400">MATH·OS</span>
+</div>
+<div class="hidden md:flex gap-8">
+<a class="nav-link text-gray-300 hover:text-cyan-400" href="home.html">知识图谱</a>
+<a class="nav-link text-gray-300 hover:text-cyan-400" href="function-plotter.html">函数绘图</a>
+<a class="nav-link nav-active text-cyan-400" href="math-history.html">数学史轴</a>
+<a class="nav-link text-gray-300 hover:text-cyan-400" href="formula-editor.html">几何编辑</a>
+<a class="nav-link text-gray-300 hover:text-cyan-400" href="physics-simulator.html">物理模拟</a>
+</div>
+<button class="px-4 py-1.5 rounded-full border border-cyan-500/50 text-cyan-400 text-sm font-tech uppercase">Timeline</button>
+</nav>
+<header class="pt-32 pb-10 text-center">
+<h1 class="text-4xl md:text-5xl font-tech font-bold neon-text mb-4">数学史长河</h1>
+<p class="text-gray-400 max-w-2xl mx-auto">从古巴比伦的泥板到图灵机的逻辑，探索改变人类文明进程的数学里程碑。</p>
+</header>
+<main class="max-w-6xl mx-auto px-6 py-20 relative">
+<div class="timeline-line"></div>
+<div id="timeline-container">
+<!-- 动态生成节点 -->
+</div>
+</main>
+<!-- 预览面板 (固定在侧边) -->
+<div class="fixed right-10 top-1/2 -translate-y-1/2 w-80 glass-panel rounded-2xl p-6 hidden lg:block border border-white/10" id="preview-panel">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center">
+<iconify-icon class="text-xl text-cyan-400" icon="mdi:brain"></iconify-icon>
+</div>
+<div>
+<h4 class="font-bold text-white" id="preview-title">选择节点</h4>
+<p class="text-xs text-cyan-500 font-tech" id="preview-year">0000 BC</p>
+</div>
+</div>
+<div class="w-full h-48 bg-black/40 rounded-xl mb-4 flex items-center justify-center overflow-hidden border border-white/5" id="visual-preview">
+<iconify-icon class="text-5xl text-gray-700" icon="mdi:chart-scatter-plot"></iconify-icon>
+</div>
+<p class="text-sm text-gray-400 leading-relaxed" id="preview-desc">点击时间轴上的节点查看详细的数学发现和历史影响。</p>
+</div>
+<script>
+        const events = [
+            { year: "前3000年", title: "巴比伦数学", desc: "发明了进位制数系（六十进制），开始记录商业账目和天文观测。", icon: "mdi:numeric-60-box-outline" },
+            { year: "前600年", title: "泰勒斯", desc: "被誉为‘科学之祖’，首次将逻辑证明引入几何学，提出泰勒斯定理。", icon: "mdi:triangle-outline" },
+            { year: "前300年", title: "欧几里得", desc: "编写《几何原本》，建立了公理化体系，影响人类思想两千年。", icon: "mdi:book-open-variant" },
+            { year: "前250年", title: "阿基米德", desc: "利用‘穷竭法’计算圆面积和球体积，微积分思想的最早萌芽。", icon: "mdi:vector-circle" },
+            { year: "830年", title: "花拉子密", desc: "代数学的奠基人，其著作《代数学》系统阐述了二次方程的解法。", icon: "mdi:variable" },
+            { year: "1202年", title: "斐波那契", desc: "将阿拉伯数字引入欧洲，发现黄金分割关联的斐波那契数列。", icon: "mdi:math-compass" },
+            { year: "1637年", title: "笛卡尔", desc: "发明了解析几何，将代数与几何结合，数学进入坐标时代。", icon: "mdi:axis-arrow" },
+            { year: "1665年", title: "牛顿 & 莱布尼茨", desc: "独立发明微积分，成为现代物理学和工程学的数学基石。", icon: "mdi:integral" },
+            { year: "1760年", title: "欧拉", desc: "数学史上最多产的学者，统一了数学符号体系，开创图论。", icon: "mdi:sigma" },
+            { year: "1824年", title: "阿贝尔", desc: "证明了五次方程没有代数通解，催生了群论的诞生。", icon: "mdi:dots-grid" },
+            { year: "1854年", title: "黎曼", desc: "提出黎曼几何，为后来爱因斯坦的广义相对论提供了数学工具。", icon: "mdi:sphere" },
+            { year: "1900年", title: "希尔伯特", desc: "在巴黎国际数学家大会提出著名的23个问题，指引20世纪数学方向。", icon: "mdi:list-status" },
+            { year: "1915年", title: "爱因斯坦", desc: "广义相对论发表，利用张量分析描述时空弯曲。", icon: "mdi:atom" },
+            { year: "1936年", title: "阿兰·图灵", desc: "提出图灵机模型，定义了可计算性，数学逻辑演变为计算机科学。", icon: "mdi:cpu-64-bit" },
+            { year: "2000年", title: "千禧年大奖难题", desc: "克雷数学研究所提出7个难题，每个价值100万美元。", icon: "mdi:trophy-outline" }
+        ];
+
+        const container = document.getElementById('timeline-container');
+        const previewTitle = document.getElementById('preview-title');
+        const previewYear = document.getElementById('preview-year');
+        const previewDesc = document.getElementById('preview-desc');
+        const visualBox = document.getElementById('visual-preview');
+
+        events.forEach((ev, index) => {
+            const item = document.createElement('div');
+            item.className = `timeline-item ${index % 2 === 0 ? 'timeline-left' : 'timeline-right'}`;
+            
+            item.innerHTML = `
+                <div class="timeline-content glass-panel cursor-pointer hover:active-card" onclick="showDetail(${index})">
+                    <span class="font-tech text-cyan-400 text-sm">${ev.year}</span>
+                    <h3 class="text-xl font-bold text-white mt-1">${ev.title}</h3>
+                    <p class="text-gray-400 text-sm mt-2 line-clamp-2">${ev.desc}</p>
+                </div>
+                <div class="timeline-dot" onclick="showDetail(${index})"></div>
+            `;
+            container.appendChild(item);
+        });
+
+        function showDetail(index) {
+            const ev = events[index];
+            previewTitle.textContent = ev.title;
+            previewYear.textContent = ev.year;
+            previewDesc.textContent = ev.desc;
+            
+            // 简单视觉动画演示
+            visualBox.innerHTML = `<iconify-icon icon="${ev.icon}" class="text-6xl text-cyan-400 animate-pulse"></iconify-icon>`;
+            
+            // 高亮当前项
+            document.querySelectorAll('.timeline-content').forEach((el, i) => {
+                if (i === index) el.classList.add('active-card');
+                else el.classList.remove('active-card');
+            });
+        }
+
+        // 粒子背景逻辑 (同home.html)
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize);
+        class Particle {
+            constructor() { this.reset(); }
+            reset() { this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height; this.vx = (Math.random() - 0.5) * 0.4; this.vy = (Math.random() - 0.5) * 0.4; this.size = Math.random() * 2; this.color = `rgba(0, 212, 255, ${Math.random() * 0.3})`; }
+            update() { this.x += this.vx; this.y += this.vy; if(this.x<0||this.x>canvas.width||this.y<0||this.y>canvas.height) this.reset(); }
+            draw() { ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); ctx.fill(); }
+        }
+        function init() { resize(); for(let i=0; i<100; i++) particles.push(new Particle()); }
+        function animate() { ctx.clearRect(0,0,canvas.width,canvas.height); particles.forEach(p=>{p.update(); p.draw();}); requestAnimationFrame(animate); }
+        init(); animate();
+    </script>
+</body>
+</html>
