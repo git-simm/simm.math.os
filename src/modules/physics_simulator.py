@@ -294,8 +294,10 @@ class NormalDistributionWidget(QWidget):
         mu_slider = QSlider(Qt.Orientation.Horizontal)
         mu_slider.setRange(-50, 50)
         mu_slider.setValue(0)
+        mu_slider.setPageStep(1)
+        mu_slider.setSingleStep(1)
         mu_slider.valueChanged.connect(lambda v, l=mu_label: self._update_params(v / 10, self._sigma, l, "mu"))
-        mu_slider.setStyleSheet(f"QSlider::groove:horizontal {{ background: #1e293b; height: 4px; }} QSlider::handle:horizontal {{ background: {CYAN}; width: 12px; border-radius: 6px; }}")
+        mu_slider.setStyleSheet(f"QSlider::groove:horizontal {{ background: #1e293b; height: 4px; }} QSlider::sub-page:horizontal {{ background: {CYAN}40; }} QSlider::handle:horizontal {{ background: {CYAN}; width: 12px; border-radius: 6px; border: none; }}")
         mu_layout.addWidget(mu_slider)
         slider_row.addLayout(mu_layout)
 
@@ -307,8 +309,10 @@ class NormalDistributionWidget(QWidget):
         sig_slider = QSlider(Qt.Orientation.Horizontal)
         sig_slider.setRange(1, 50)
         sig_slider.setValue(10)
+        sig_slider.setPageStep(1)
+        sig_slider.setSingleStep(1)
         sig_slider.valueChanged.connect(lambda v, l=sig_label: self._update_params(self._mu, v / 10, l, "sigma"))
-        sig_slider.setStyleSheet(f"QSlider::groove:horizontal {{ background: #1e293b; height: 4px; }} QSlider::handle:horizontal {{ background: {PURPLE}; width: 12px; border-radius: 6px; }}")
+        sig_slider.setStyleSheet(f"QSlider::groove:horizontal {{ background: #1e293b; height: 4px; }} QSlider::sub-page:horizontal {{ background: {PURPLE}40; }} QSlider::handle:horizontal {{ background: {PURPLE}; width: 12px; border-radius: 6px; border: none; }}")
         sig_layout.addWidget(sig_slider)
         slider_row.addLayout(sig_layout)
 

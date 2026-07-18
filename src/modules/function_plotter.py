@@ -280,9 +280,12 @@ class FunctionPlotterPage(QWidget):
             slider = QSlider(Qt.Orientation.Horizontal)
             slider.setRange(-100, 100)
             slider.setValue(int(float(default) * 10))
+            slider.setPageStep(1)
+            slider.setSingleStep(1)
             slider.setStyleSheet(f"""
                 QSlider::groove:horizontal {{ background: #1e293b; height: 4px; border-radius: 2px; }}
-                QSlider::handle:horizontal {{ background: {CYAN}; width: 14px; height: 14px; margin: -5px 0; border-radius: 7px; }}
+                QSlider::sub-page:horizontal {{ background: {CYAN}40; border-radius: 2px; }}
+                QSlider::handle:horizontal {{ background: {CYAN}; width: 14px; height: 14px; margin: -5px 0; border-radius: 7px; border: none; }}
                 QSlider::handle:horizontal:hover {{ background: #00e5ff; }}
             """)
             slider.valueChanged.connect(self._on_slider_changed)

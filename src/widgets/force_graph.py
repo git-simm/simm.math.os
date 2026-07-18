@@ -187,9 +187,15 @@ class ForceGraphWidget(QWidget):
             p.setPen(pen)
             p.drawEllipse(int(px - radius), int(py - radius), int(2 * radius), int(2 * radius))
 
-            # Icon
+            # Icon - use appropriate font based on character type
             icon = node.get("icon", "")
-            icon_font = QFont("Segoe UI Emoji", int(radius * 0.6))
+            if icon:
+                # Check if it's a color emoji (U+1F000+)
+                is_emoji = len(icon) == 1 and ord(icon) >= 0x1F000
+                font_family = "Segoe UI Emoji" if is_emoji else "Segoe UI Symbol"
+                icon_font = QFont(font_family, int(radius * 0.6))
+            else:
+                icon_font = QFont("Segoe UI Symbol", int(radius * 0.6))
             p.setFont(icon_font)
             p.setPen(color)
             p.drawText(QRectF(px - radius, py - radius * 0.6, 2 * radius, radius * 1.5),

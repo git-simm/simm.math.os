@@ -289,7 +289,7 @@ class NumberTheoryBasicsPage(QWidget):
         search_layout.addWidget(search_icon)
 
         self._search_input = QLineEdit()
-        self._search_input.setPlaceholderText("鎼滅储鐭ヨ瘑鍗＄墖... 渚嬪: 鏈夌悊鏁般€丼姹傛牴鍏紡銆乮虏=-1銆佸垽鍒紡...")
+        self._search_input.setPlaceholderText("??????... ??: ?????????i?=-1????...")
         self._search_input.textChanged.connect(self._on_search)
         self._search_input.setStyleSheet(f"""
             QLineEdit {{
@@ -314,7 +314,7 @@ class NumberTheoryBasicsPage(QWidget):
         root.addWidget(search_panel)
 
         # ── Results count ──
-        self._results_label = QLabel(f"鏄剧ず {len(self._filtered_nodes)} 寮犵煡璇嗗崱鐗?")
+        self._results_label = QLabel(f"?? {len(self._filtered_nodes)} ?????")
         self._results_label.setStyleSheet(f"color: {TEXT_MUTED}; font-size: 11px;")
         root.addWidget(self._results_label)
 
@@ -359,7 +359,7 @@ class NumberTheoryBasicsPage(QWidget):
             if item.widget():
                 item.widget().deleteLater()
 
-        self._results_label.setText(f"鏄剧ず {len(self._filtered_nodes)} 寮犵煡璇嗗崱鐗? | 鎼滅储: {self._search_text or '鍏ㄩ儴'}")
+        self._results_label.setText(f"?? {len(self._filtered_nodes)} ????? | ??: {self._search_text or '??'}")
 
         # Group by level
         grouped: dict[int, list[dict]] = {}
